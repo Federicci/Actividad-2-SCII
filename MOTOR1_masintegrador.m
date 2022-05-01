@@ -24,69 +24,70 @@ B=[1/Laa; 0; 0];
 C=[0 0 1];
 D=[0];
 
-M_cont=[B A*B A*A*B];
-rank(M_cont) %->3, el sistema es controlable
+%Prueba agregando un integrador, amplio el sistema
+%Agrego un integrador para mejorar el error en estado estacionario por la
+%perturbacion de torque:
+%Amplio el sistema
+
+AA=[A zeros(3,1); -C 0];
+BB=[B; 0];
 
 %Diseño con LQR
-Q=diag([5 5 50]);    R=0.1;
+QQ=diag([5 5 50 5]);    RR=1;
 %Hamiltoniano
-H=[A -B*inv(R)*B'; -Q -A'];
-[vects,autovals]=eig(H);  %columnas de vects: autovectores
+HH=[AA -BB*inv(RR)*BB'; -QQ -AA'];
+[vects1,autovals1]=eig(HH);  %columnas de vects: autovectores
 %Debo extraer solo los autovectores cuyos autovalores son negativos:
-autovects_neg=[];
-for i=1:1:length(autovals)
-    if (real(autovals(i,i)))<0
-        autovects_neg=[autovects_neg vects(:,i)];
+autovects_neg1=[];
+for i=1:1:length(autovals1)
+    if (real(autovals1(i,i)))<0
+        autovects_neg1=[autovects_neg1 vects1(:,i)];
     end
 end    
 
 %divido la matriz de autovectores en 2 matrices:
-[filas,colums]=size(autovects_neg);
-M=autovects_neg(1:(filas/2),:);
-PM=autovects_neg((filas/2+1):filas,:);
-P=real(PM*inv(M));
+[filas1,colums1]=size(autovects_neg1);
+M1=autovects_neg1(1:(filas1/2),:);
+PM1=autovects_neg1((filas1/2+1):filas1,:);
+P1=real(PM1*inv(M1));
 
 %Con la matriz P construyo el controlador
-K=inv(R)*B'*P;
-
-%G para referencia distinta de 0:
-G=-inv(C*inv(A-B*K)*B);
+KK=inv(RR)*BB'*P1;
+%KK=[K -Ki]
 
 %Simulación del control:
 deltat=1e-5;
 ts=0.7;
 pasos=round(ts/deltat);
-Ci=[0 0 0];
+Ci=[0 0 0 0];
 t=0:deltat:(ts-deltat);
 %Funciones de referencia y torque mientras va variando el tiempo:
 ref=(pi/2)*square(2*pi*t/0.2);
-figure
-plot(t,ref);
 fTl=(Tl/2)*square(2*pi*t/0.2)+Tl/2;
-figure
-plot(t,fTl);
 
-x=zeros(3,pasos);
+x=zeros(4,pasos);
 x(1,1)=Ci(1);
 x(2,1)=Ci(2);
 x(3,1)=Ci(3);
-u(1)=0;
+x(4,1)=Ci(4);
+ua(1)=0;
 
 for i=2:1:pasos
-    x_actual=[x(1,i-1); x(2,i-1); x(3,i-1)];
-    u_actual=-K*x_actual+ref(i-1)*G;
-    %u_actual=-K*x_actual+(ref(i-1)-C*x_actual);
-    u=[u u_actual];
+    x_actual=[x(1,i-1); x(2,i-1); x(3,i-1); x(4,i-1)];
+    integracion=x(4,i-1)+deltat*(ref(1,i-1)-x_actual(4));
+    u_actual=-KK(1:3)*x_actual(1:3)+integracion*-KK(4);
+    ua=[ua u_actual];
     
     x1_p=-Ra*x_actual(1)/Laa-Km*x_actual(2)/Laa+u_actual/Laa;
     x2_p=Ki*x_actual(1)/J-Bm*x_actual(2)/J-fTl(i-1)/J;
     x3_p=x_actual(2);
     x_p_actual=[x1_p; x2_p; x3_p];
     
-    x_sig=x_actual+deltat*x_p_actual;
+    x_sig=x_actual(1:3)+deltat*x_p_actual;
     x(1,i)=x_sig(1);
     x(2,i)=x_sig(2);
     x(3,i)=x_sig(3);
+    x(4,i)=integracion;
 end
 
 figure
@@ -94,9 +95,6 @@ plot(t,x(3,:));
 hold on;
 plot(t,ref);
 figure
-plot(t,u);
-
-
-
+plot(t,ua);
 
 
