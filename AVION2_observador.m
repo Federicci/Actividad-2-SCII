@@ -39,6 +39,13 @@ K=place(A,B,[p1;p2;p3;p4]);
 %G para referencia distinta de 0:
 G=-inv(C*inv(A-B*K)*B);
 
+%Cálculo del observador
+A_o=A';
+B_o=C';
+C_o=B';
+
+K_o=place(A_o,B_o,[-5 -3 -1-i -1+i]);
+
 %Simulacion
 deltat=10^-3;
 ts=70;
@@ -51,12 +58,17 @@ x(1,1)=Ci(1);
 x(2,1)=Ci(2);
 x(3,1)=Ci(3);
 x(4,1)=Ci(4);
+x_hat=zeros(4,pasos);
+x_hat(1,1)=0;
+x_hat(2,1)=0;
+x_hat(3,1)=0;
+x_hat(4,1)=0;
 u(1)=0;
 
 for i=2:1:pasos
-    x_actual=[x(1,i-1); x(2,i-1); x(3,i-1); x(4,i-1)];
-    u_actual=-K*x_actual+ref*G;
-    %u_actual=-K*x_actual+(ref-C*x_actual);
+    x_actual=x(:,i-1);
+    x_hat_actual=x_hat(:,i-1);
+    u_actual=-K*x_hat_actual+0*ref*G;
     u=[u u_actual];
     
     x1_p=-a*x_actual(1)+a*x_actual(2);
@@ -70,6 +82,17 @@ for i=2:1:pasos
     x(2,i)=x_sig(2);
     x(3,i)=x_sig(3);
     x(4,i)=x_sig(4);
+    
+    y_actual=C*x_actual;
+    y_hat_actual=C*x_hat_actual;
+    e=y_actual-y_hat_actual;
+    
+    x_hat_p=K_o*e+A*x_hat_actual+B*-K*x_hat_actual;
+    
+    x_hat_sig=x_hat_actual+deltat*x_hat_p;
+    x_hat(1,i)=x_hat_sig(1);
+    x_hat(2,i)=x_hat_sig(2);
+    x_hat(3,i)=x_hat_sig(3);
 end
 
 figure

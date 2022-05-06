@@ -24,38 +24,49 @@ B=[1/Laa; 0; 0];
 C=[0 0 1];
 D=[0];
 
+%Agrego un integrador para mejorar el error en estado estacionario por la
+%perturbacion de torque:
+%Amplio el sistema
+
+AA=[A zeros(3,1); -C 0];
+BB=[B; 0];
+CC=[C 0];
+
 %Diseño con LQR
-Q=diag([0.01 1 5]);    R=0.15;
+QQ=diag([1 1/10000 1/40 1000000]);    RR=0.1;
 %Hamiltoniano
-H=[A -B*inv(R)*B'; -Q -A'];
-[vects,autovals]=eig(H);  %columnas de vects: autovectores
+HH=[AA -BB*inv(RR)*BB'; -QQ -AA'];
+[vects1,autovals1]=eig(HH);  %columnas de vects: autovectores
 %Debo extraer solo los autovectores cuyos autovalores son negativos:
-autovects_neg=[];
-for i=1:1:length(autovals)
-    if (real(autovals(i,i)))<0
-        autovects_neg=[autovects_neg vects(:,i)];
+autovects_neg1=[];
+for i=1:1:length(autovals1)
+    if (real(autovals1(i,i)))<0
+        autovects_neg1=[autovects_neg1 vects1(:,i)];
     end
 end    
 
 %divido la matriz de autovectores en 2 matrices:
-[filas,colums]=size(autovects_neg);
-M=autovects_neg(1:(filas/2),:);
-PM=autovects_neg((filas/2+1):filas,:);
-P=real(PM*inv(M));
+[filas1,colums1]=size(autovects_neg1);
+M1=autovects_neg1(1:(filas1/2),:);
+PM1=autovects_neg1((filas1/2+1):filas1,:);
+P1=real(PM1*inv(M1));
 
 %Con la matriz P construyo el controlador
-K=inv(R)*B'*P;
-
-%G para referencia distinta de 0:
-G=-inv(C*inv(A-B*K)*B);
+KK=inv(RR)*BB'*P1;
+%KK=[K -Ki]
 
 %Calculo del observador
-A_o=A';
-B_o=C';
-C_o=B';
-Q_o=diag([1000000 1000000 1000000]);    R_o=0.000000001;
+A_o=AA';
+B_o=CC';
+C_o=BB';
 
-H_o=[A_o -B_o*inv(R)*B_o'; -Q_o -A_o'];
+M_cont=[B_o A_o*B_o A_o*A_o*B_o A_o*A_o*A_o*B_o];
+rank(M_cont)  %No es controlable?
+
+Q_o=1e5*diag([1 1 1 1]);    R_o=1;
+Q_o=20*diag([1 1/10000 1/40 1000000]);    R_o=0.1/20;
+
+H_o=[A_o -B_o*inv(R_o)*B_o'; -Q_o -A_o'];
 
 [vects_o,autovals_o]=eig(H_o);  %columnas de vects: autovectores
 %Debo extraer solo los autovectores cuyos autovalores son negativos:
@@ -72,38 +83,37 @@ M_o=autovects_neg_o(1:(filas_o/2),:);
 PM_o=autovects_neg_o((filas_o/2+1):filas_o,:);
 P_o=real(PM_o*inv(M_o));
 
-%Con la matriz P construyo el controlador
+%Con la matriz P construyo el controlador del observador
 K_o=inv(R_o)*B_o'*P_o;
 
 %Simulación del control:
 deltat=1e-5;
-ts=0.7;
+ts=1.2;
 pasos=round(ts/deltat);
-Ci=[0 0 0];
+Ci=[0 0 0 0];
 t=0:deltat:(ts-deltat);
 %Funciones de referencia y torque mientras va variando el tiempo:
-ref=(pi/2)*square(2*pi*t/0.2);
-figure
-plot(t,ref);
-fTl=(Tl/2)*square(2*pi*t/0.2)+Tl/2;
-figure
-plot(t,fTl);
+ref=(pi/2)*square(2*pi*t/0.6);
+fTl=(Tl/2)*square(2*pi*t/0.6)+Tl/2;
 
-x_hat=zeros(3,pasos);
+x_hat=zeros(4,pasos);
 x_hat(1,1)=0;
 x_hat(2,1)=0;
 x_hat(3,1)=0;
-x=zeros(3,pasos);
+x_hat(4,1)=0;
+x=zeros(4,pasos);
 x(1,1)=Ci(1);
 x(2,1)=Ci(2);
 x(3,1)=Ci(3);
+x(4,1)=Ci(4);
 u(1)=0;
 
 for i=2:1:pasos
-    u_actual=-K*x_hat(:,i-1)+ref(i-1)*G;
-    u=[u u_actual];
     x_actual=x(:,i-1);
     x_hat_actual=x_hat(:,i-1);
+    integracion=x(4,i-1)+deltat*(ref(1,i-1)-CC*x_actual);
+    u_actual=-KK(1:3)*x_hat_actual(1:3)-integracion*KK(4);
+    u=[u u_actual];
     
     x1_p=-Ra*x_actual(1)/Laa-Km*x_actual(2)/Laa+u_actual/Laa;
     x2_p=Ki*x_actual(1)/J-Bm*x_actual(2)/J-fTl(i-1)/J;
@@ -114,12 +124,13 @@ for i=2:1:pasos
     x(1,i)=x_sig(1);
     x(2,i)=x_sig(2);
     x(3,i)=x_sig(3);
+    x(4,i)=integracion;
     
-    y_actual=x_actual(3);
-    y_hat_actual=x_hat_actual(3);
+    y_actual=CC*x_actual;
+    y_hat_actual=CC*x_hat_actual;
     e=y_actual-y_hat_actual;
     
-    x_hat_p=e*K_o+A*x_hat_actual+x_hat_actual*K*B;
+    x_hat_p=e*K_o'+A*x_hat_actual+x_hat_actual*u_actual;
     
     x_hat_sig=x_hat_actual+deltat*x_hat_p;
     x_hat(1,i)=x_hat_sig(1);
