@@ -11,7 +11,7 @@ A=[0 1 0 0;0 -Fricc/M -m*g/M 0; 0 0 0 1; 0 Fricc/(l*M) g*(m+M)/(l*M) 0];
 B=[0; 1/M; 0; -1/(l*M)];
 C=[1 0 0 0]; 
 
-%Diseño con LQR
+%DiseÃ±o con LQR
 Q=10*diag([1 1 1 1]);    R=1;
 %Hamiltoniano
 H=[A -B*inv(R)*B'; -Q -A'];
@@ -33,7 +33,7 @@ P1=real(PM1*inv(M1));
 %Con la matriz P construyo el controlador
 K=inv(R)*B'*P1;
 
-%Diseño con LQR para el observador
+%DiseÃ±o con LQR para el observador
 Q_o=diag([1 1 1 1]);    R_o=1;
 A_o=A';
 B_o=C';
@@ -63,7 +63,7 @@ K_o=inv(R_o)*B_o'*P_o;
 %Ganancia de prealimentacion para ref distinta de 0
 G=-inv(C*inv(A-B*K)*B);
 
-%Simulación del control:
+%SimulaciÃ³n del control:
 deltat=10^-4;
 ts=5;
 pasos=round(ts/deltat);
@@ -105,8 +105,9 @@ for i=2:1:pasos
     y_hat_actual=C*x_hat_actual;
     e=y_actual-y_hat_actual;
     
-    x_hat_p=e*K_o'+A*x_hat_actual+x_hat_actual*-K*x_hat_actual;
-    
+   %     x_hat_p=e*K_o'+A*x_hat_actual+x_hat_actual*-K*x_hat_actual;
+    x_hat_p=e*K_o'+A*x_hat_actual+B*u_actual;
+
     x_hat_sig=x_hat_actual+deltat*x_hat_p;
     x_hat(:,i)=x_hat_sig;
     
