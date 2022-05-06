@@ -105,9 +105,8 @@ for i=2:1:pasos
     y_hat_actual=C*x_hat_actual;
     e=y_actual-y_hat_actual;
     
-   %     x_hat_p=e*K_o'+A*x_hat_actual+x_hat_actual*-K*x_hat_actual;
+ %     x_hat_p=e*K_o'+A*x_hat_actual+x_hat_actual*-K*x_hat_actual;
     x_hat_p=e*K_o'+A*x_hat_actual+B*u_actual;
-
     x_hat_sig=x_hat_actual+deltat*x_hat_p;
     x_hat(:,i)=x_hat_sig;
     
