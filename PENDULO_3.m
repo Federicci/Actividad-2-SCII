@@ -11,7 +11,7 @@ A=[0 1 0 0;0 -Fricc/M -m*g/M 0; 0 0 0 1; 0 Fricc/(l*M) -g*(m+M)/(l*M) 0];
 B=[0; 1/M; 0; -1/(l*M)];
 C=[1 0 0 0]; 
 
-%Diseño con LQR
+%DiseÃ±o con LQR
 Q=10*diag([1 1 10000 1]);    R=.1;
 %Hamiltoniano
 H=[A -B*inv(R)*B'; -Q -A'];
@@ -36,18 +36,18 @@ K=inv(R)*B'*P1;
 %Ganancia de prealimentacion para ref distinta de 0
 G=-inv(C*inv(A-B*K)*B);
 
-%Simulación del control:
+%SimulaciÃ³n del control:
 deltat=10^-4;
 ts=20;
 pasos=round(ts/deltat);
 Ci=[0 0 pi 0];
 t=0:deltat:(ts-deltat);
-%Funciones de referencia y torque mientras va variando el tiempo:
+
+%Funciones de referencia y masa mientras va variando el tiempo:
 ref_dist=10*square(2*pi*t/20);
 m=ones(1,pasos);
 m=m*0.1;
 m((pasos/2):end)=m((pasos/2):end)*10;
-
 
 x=zeros(4,pasos);
 x(1,1)=Ci(1);
