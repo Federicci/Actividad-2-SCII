@@ -60,7 +60,7 @@ A_o=A';
 B_o=C';
 C_o=B';
 
-Q_o=1e2*diag([1 1 1]);    R_o=1;
+Q_o=1e6*diag([1 1 1]);    R_o=0.001;
 %Q_o=20*diag([1 1/10000 1/40]);    R_o=0.1/20;
 
 H_o=[A_o -B_o*inv(R_o)*B_o'; -Q_o -A_o'];
@@ -85,7 +85,7 @@ K_o=inv(R_o)*B_o'*P_o;
 
 %Simulación del control:
 deltat=1e-5;
-ts=0.6;
+ts=1.2;
 pasos=round(ts/deltat);
 Ci=[0 0 0 0];
 t=0:deltat:(ts-deltat);
@@ -126,7 +126,7 @@ for i=2:1:pasos
     y_hat_actual=C*x_hat_actual;
     e=y_actual-y_hat_actual;
     
-    x_hat_p=e*K_o'+A*x_hat_actual+B*-KK(1:3)*x_hat_actual(1:3);
+    x_hat_p=e*K_o'+A*x_hat_actual+B*u_actual;
     
     x_hat_sig=x_hat_actual+deltat*x_hat_p;
     x_hat(1,i)=x_hat_sig(1);

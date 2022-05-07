@@ -44,7 +44,7 @@ A_o=A';
 B_o=C';
 C_o=B';
 
-K_o=place(A_o,B_o,[-5 -3 -1-i -1+i]);
+K_o=place(A_o,B_o,1*[-5 -3 -1-i -1+i]);
 
 %Simulacion
 deltat=10^-3;
@@ -68,7 +68,7 @@ u(1)=0;
 for i=2:1:pasos
     x_actual=x(:,i-1);
     x_hat_actual=x_hat(:,i-1);
-    u_actual=-K*x_hat_actual+0*ref*G;
+    u_actual=-K*x_hat_actual+ref*G;
     u=[u u_actual];
     
     x1_p=-a*x_actual(1)+a*x_actual(2);
@@ -87,7 +87,7 @@ for i=2:1:pasos
     y_hat_actual=C*x_hat_actual;
     e=y_actual-y_hat_actual;
     
-    x_hat_p=K_o*e+A*x_hat_actual+B*-K*x_hat_actual;
+    x_hat_p=K_o*e+A*x_hat_actual+B*u_actual;
     
     x_hat_sig=x_hat_actual+deltat*x_hat_p;
     x_hat(1,i)=x_hat_sig(1);
