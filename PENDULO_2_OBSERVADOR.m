@@ -67,7 +67,7 @@ G=-inv(C*inv(A-B*K)*B);
 deltat=10^-4;
 ts=10;
 pasos=round(ts/deltat);
-Ci=[0 0 0.3 0];
+Ci=[0 0 0.7 0];
 t=0:deltat:(ts-deltat);
 %Funciones de referencia y torque mientras va variando el tiempo:
 ref_dist=10;
@@ -111,7 +111,7 @@ for i=2:1:pasos
     x_hat(:,i)=x_hat_sig;
     
     
-    %Sist. sin observador
+    %Sist. sin observador para comparar
     x_actual_compar=x_compar(:,i-1);
     u_actual_compar=-K*x_actual_compar+ref_dist*G;
     ua_compar=[ua_compar u_actual_compar];
@@ -120,7 +120,70 @@ for i=2:1:pasos
     x_compar(:,i)=x_sig_compar;
 end
 
-figure
-plot(t,x(1,:));
+ref_dist=ref_dist*ones(1,pasos);
+figure(1)
+subplot(2,2,1);
+plot(t,x(1,:),'color','r');
 hold on;
-plot(t,x_compar(1,:));
+plot(t,x_compar(1,:),'color',[0.4660 0.6740 0.1880]);
+plot(t,ref_dist,'k');
+grid on;
+title('Distancia');
+xlabel('Tiempo');
+legend({'Con observador','Sin observador','Referencia'},'Location','southeast')
+subplot(2,2,2);
+plot(t,x(3,:),'color','r');
+hold on;
+plot(t,x_compar(3,:),'color',[0.4660 0.6740 0.1880]);
+grid on;
+title('Ángulo');
+xlabel('Tiempo');
+legend({'Con observador','Sin observador'},'Location','southeast')
+subplot(2,2,[3,4]);
+plot(t,ua,'color','r');
+hold on;
+plot(t,ua_compar,'color',[0.4660 0.6740 0.1880]);
+grid on;
+title('Acción de control');
+xlabel('Tiempo');
+legend({'Con observador','Sin observador'},'Location','southeast')
+
+%Planos de fase con scatter para variar colores
+figure(2)
+subplot(2,1,1);
+grid on;
+hold on;
+plot(x(1,1),x(2,1),'b');
+plot(x_compar(1,1),x_compar(2,1),'r');
+%f=-t/ts+1;
+f=(t-ts).^6/(ts^6);
+f(end)=1;
+C=zeros(pasos,3);
+C(:,3)=f;
+scatter(x(1,:),x(2,:),3,C,'filled')
+C1=zeros(pasos,3);
+C1(:,1)=f;
+scatter(x_compar(1,:),x_compar(2,:),3,C1,'filled')
+title('Distancia vs velocidad');
+xlabel('Distancia');
+ylabel('Velocidad');
+legend({'Con observador','Sin observador'},'Location','southeast')
+
+subplot(2,1,2);
+grid on;
+hold on;
+plot(x(3,1),x(4,1),'b');
+plot(x_compar(3,1),x_compar(4,1),'r');
+%f=-t/ts+1;
+f=(t-ts).^6/(ts^6);
+f(end)=1;
+C=zeros(pasos,3);
+C(:,3)=f;
+scatter(x(3,:),x(4,:),3,C,'filled')
+C1=zeros(pasos,3);
+C1(:,1)=f;
+scatter(x_compar(3,:),x_compar(4,:),3,C1,'filled')
+title('Ángulo vs velocidad angular');
+xlabel('Ángulo');
+ylabel('Velocidad angular');
+legend({'Con observador','Sin observador'},'Location','southeast')

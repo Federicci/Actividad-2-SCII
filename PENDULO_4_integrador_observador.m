@@ -17,7 +17,8 @@ BB=[B; 0];
 CC=[C 0];
 
 %Diseño con LQR
-Q=1*diag([0.0001 0.001 10000 10 100]);    R=1000;
+%Q=1*diag([0.0001 0.001 10000 10 100]);    R=1000;
+Q=1*diag([0.1 1 10 10 1]);    R=100;
 %Hamiltoniano
 H=[AA -BB*inv(R)*BB'; -Q -AA'];
 [vects1,autovals1]=eig(H);  %columnas de vects: autovectores
@@ -38,7 +39,43 @@ P1=real(PM1*inv(M1));
 %Con la matriz P construyo el controlador
 K=inv(R)*BB'*P1;
 
+
+
+%Controlador para cambio de masa:
+m=m*10;
+A=[0 1 0 0;0 -Fricc/M -m*g/M 0; 0 0 0 1; 0 -Fricc/(l*M) -g*(m+M)/(l*M) 0];
+AA=[A zeros(4,1); -C 0];
+
+%Diseño con LQR
+%Q=1*diag([0.0001 0.001 10000 10 100]);    R=1000;
+Q=1*diag([0.1 1 10 10 1]);    R=100;
+%Hamiltoniano
+H=[AA -BB*inv(R)*BB'; -Q -AA'];
+[vects1,autovals1]=eig(H);  %columnas de vects: autovectores
+%Debo extraer solo los autovectores cuyos autovalores son negativos:
+autovects_neg1=[];
+for i=1:1:length(autovals1)
+    if (real(autovals1(i,i)))<0
+        autovects_neg1=[autovects_neg1 vects1(:,i)];
+    end
+end    
+
+%divido la matriz de autovectores en 2 matrices:
+[filas1,colums1]=size(autovects_neg1);
+M1=autovects_neg1(1:(filas1/2),:);
+PM1=autovects_neg1((filas1/2+1):filas1,:);
+P1=real(PM1*inv(M1));
+
+%Con la matriz P construyo el controlador
+K1=inv(R)*BB'*P1;
+
+
+
+
 %Cálculo del observador
+m=.1*10;
+A=[0 1 0 0;0 -Fricc/M -m*g/M 0; 0 0 0 1; 0 -Fricc/(l*M) -g*(m+M)/(l*M) 0];
+
 %Diseño con LQR para el observador
 Q_o=1e4*diag([1 1 10 1]);    R_o=0.1;
 
@@ -91,15 +128,25 @@ x(2,1)=Ci(2);
 x(3,1)=Ci(3);
 x(4,1)=Ci(4);
 x(5,1)=Ci(5);
+x_compar=zeros(5,pasos);
+x_compar(1,1)=Ci(1);
+x_compar(2,1)=Ci(2);
+x_compar(3,1)=Ci(3);
+x_compar(4,1)=Ci(4);
+x_compar(5,1)=Ci(5);
 ua(1)=0;
+ua_compar(1)=0;
 
 x_OP=[0;0;pi;0;0];
 
 for i=2:1:pasos
+    if m(i-1)>.5
+        K=K1;
+    end
     x_actual=x(:,i-1);
     x_hat_actual=x_hat(:,i-1);
     integracion=x_actual(5)+deltat*(ref_dist(i-1)-CC*x_actual);
-    u_actual=-K(1:4)*x_hat_actual(1:4)-integracion*K(5); %El - va por -Ki
+    u_actual=-K(1)*x_actual(1)-K(2:4)*x_hat_actual(2:4)-integracion*K(5); %El - va por -Ki
     ua=[ua u_actual];
     
     x_1_p=x_actual(2);
@@ -121,17 +168,90 @@ for i=2:1:pasos
     
     x_hat_sig=x_hat_actual+deltat*x_hat_p;
     x_hat(:,i)=x_hat_sig;
+    
+    %Sistema sin observador para comparar
+    x_actual_compar=x_compar(:,i-1);
+    integracion_compar=x_actual_compar(5)+deltat*(ref_dist(i-1)-CC*x_actual_compar);
+    u_actual_compar=-K(1:4)*x_actual_compar(1:4)-integracion_compar*K(5);
+    ua_compar=[ua_compar u_actual_compar];
+    
+    x_1_p_com=x_actual_compar(2);
+    x_2_p_com=-Fricc*x_actual_compar(2)/M-m(i-1)*g*(x_actual_compar(3)-x_OP(3))/M+u_actual_compar/M;
+    x_3_p_com=x_actual_compar(4);
+    x_4_p_com=-Fricc*x_actual_compar(2)/(l*M)-g*(m(i-1)+M)*(x_actual_compar(3)-x_OP(3))/(l*M)+u_actual_compar/(l*M);
+    x_5_p_com=0;
+    x_p_actual_compar=[x_1_p_com;x_2_p_com;x_3_p_com;x_4_p_com;x_5_p_com];
+    
+    x_sig_compar=x_actual_compar+deltat*x_p_actual_compar;
+    x_compar(:,i)=x_sig_compar;
+    x_compar(5,i)=integracion_compar;
 end
 
-figure
-plot(t,x(1,:)); 
+figure(1)
+subplot(2,2,1);
+plot(t,x(1,:),'color','r');
 hold on;
-plot(t,ref_dist);
-figure
-plot(t,x(3,:));
-figure
-plot(t,ua); %Acc. de control.
-figure
-plot(x(3,:),x(4,:));
-figure
-plot(x(1,:),x(2,:));
+plot(t,x_compar(1,:),'color',[0.4660 0.6740 0.1880]);
+plot(t,ref_dist,'k');
+grid on;
+title('Distancia');
+xlabel('Tiempo');
+legend({'Con observador','Sin observador','Referencia'},'Location','northeast')
+subplot(2,2,2);
+plot(t,x(3,:),'color','r');
+hold on;
+plot(t,x_compar(3,:),'color',[0.4660 0.6740 0.1880]);
+grid on;
+title('Ángulo');
+xlabel('Tiempo');
+legend({'Con observador','Sin observador'},'Location','southeast')
+subplot(2,2,[3,4]);
+plot(t,ua,'color','r');
+hold on;
+plot(t,ua_compar,'color',[0.4660 0.6740 0.1880]);
+grid on;
+title('Acción de control');
+xlabel('Tiempo');
+legend({'Con observador','Sin observador'},'Location','southeast')
+%%
+%Planos de fase
+figure(2)
+subplot(2,1,1);
+grid on;
+hold on;
+plot(x(1,1),x(2,1),'b');
+plot(x_compar(1,1),x_compar(2,1),'r');
+%f=-t/ts+1;
+%f=(t-ts).^2/(ts^2);
+f=-t.^1.2/(ts^1.2)+1;
+f(end)=1;
+C=zeros(pasos,3);
+C(:,3)=f;
+scatter(x(1,:),x(2,:),3,C,'filled')
+C1=zeros(pasos,3);
+C1(:,1)=f;
+scatter(x_compar(1,:),x_compar(2,:),3,C1,'filled')
+title('Distancia vs velocidad');
+xlabel('Distancia');
+ylabel('Velocidad');
+legend({'Con observador','Sin observador'},'Location','southeast')
+
+subplot(2,1,2);
+grid on;
+hold on;
+plot(x(3,1),x(4,1),'b');
+plot(x_compar(3,1),x_compar(4,1),'r');
+%f=-t/ts+1;
+%f=(t-ts).^2/(ts^2);
+f=-t.^1.2/(ts^1.2)+1;
+f(end)=1;
+C=zeros(pasos,3);
+C(:,3)=f;
+scatter(x(3,:),x(4,:),3,C,'filled')
+C1=zeros(pasos,3);
+C1(:,1)=f;
+scatter(x_compar(3,:),x_compar(4,:),3,C1,'filled')
+title('Ángulo vs velocidad angular');
+xlabel('Ángulo');
+ylabel('Velocidad angular');
+legend({'Con observador','Sin observador'},'Location','southeast')

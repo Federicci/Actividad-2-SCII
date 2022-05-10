@@ -58,12 +58,18 @@ x(1,1)=Ci(1);
 x(2,1)=Ci(2);
 x(3,1)=Ci(3);
 x(4,1)=Ci(4);
+x_compar=zeros(4,pasos);
+x_compar(1,1)=Ci(1);
+x_compar(2,1)=Ci(2);
+x_compar(3,1)=Ci(3);
+x_compar(4,1)=Ci(4);
 x_hat=zeros(4,pasos);
 x_hat(1,1)=0;
 x_hat(2,1)=0;
 x_hat(3,1)=0;
 x_hat(4,1)=0;
 u(1)=0;
+u_compar(1)=0;
 
 for i=2:1:pasos
     x_actual=x(:,i-1);
@@ -71,31 +77,73 @@ for i=2:1:pasos
     u_actual=-K*x_hat_actual+ref*G;
     u=[u u_actual];
     
-    x1_p=-a*x_actual(1)+a*x_actual(2);
-    x2_p=x_actual(3);
-    x3_p=w^2*x_actual(1)-w^2*x_actual(2)+b*w^2*u_actual;
-    x4_p=c*x_actual(1);
-    x_p_actual=[x1_p; x2_p; x3_p; x4_p];
-    
+    x_p_actual=A*x_actual+B*u_actual;
     x_sig=x_actual+deltat*x_p_actual;
-    x(1,i)=x_sig(1);
-    x(2,i)=x_sig(2);
-    x(3,i)=x_sig(3);
-    x(4,i)=x_sig(4);
+    x(:,i)=x_sig;
     
     y_actual=C*x_actual;
     y_hat_actual=C*x_hat_actual;
     e=y_actual-y_hat_actual;
     
-    x_hat_p=K_o*e+A*x_hat_actual+B*u_actual;
+    x_hat_p=e*K_o'+A*x_hat_actual+B*u_actual;
     
     x_hat_sig=x_hat_actual+deltat*x_hat_p;
-    x_hat(1,i)=x_hat_sig(1);
-    x_hat(2,i)=x_hat_sig(2);
-    x_hat(3,i)=x_hat_sig(3);
+    x_hat(:,i)=x_hat_sig;
+    
+    %Sist. sin observador para comparar
+    x_actual_compar=x_compar(:,i-1);
+    u_actual_compar=-K*x_actual_compar+ref*G;
+    u_compar=[u_compar u_actual_compar];
+    
+    x_p_actual_compar=A*x_actual_compar+B*u_actual_compar;
+    x_sig_compar=x_actual_compar+deltat*x_p_actual_compar;
+    x_compar(:,i)=x_sig_compar;
 end
 
-figure
-plot(t,x(4,:));
-figure
-plot(t,u);
+ref=ref*ones(1,pasos);
+figure(1)
+subplot(3,2,1);
+plot(t,x(4,:),'color','r');
+hold on;
+plot(t,x_compar(4,:),'color',[0.4660 0.6740 0.1880]);
+plot(t,ref,'k');
+grid on;
+title('Altura');
+xlabel('Tiempo');
+legend({'Con observador','Sin observador','Referencia'},'Location','southeast')
+
+subplot(3,2,2);
+plot(t,x(1,:),'color','r');
+hold on;
+plot(t,x_compar(1,:),'color',[0.4660 0.6740 0.1880]);
+grid on;
+title('Alpha');
+xlabel('Tiempo');
+legend({'Con observador','Sin observador'},'Location','southeast')
+
+subplot(3,2,3);
+plot(t,x(2,:),'color','r');
+hold on;
+plot(t,x_compar(2,:),'color',[0.4660 0.6740 0.1880]);
+grid on;
+title('Phi');
+xlabel('Tiempo');
+legend({'Con observador','Sin observador'},'Location','southeast')
+
+subplot(3,2,4);
+plot(t,x(3,:),'color','r');
+hold on;
+plot(t,x_compar(3,:),'color',[0.4660 0.6740 0.1880]);
+grid on;
+title('Phi punto');
+xlabel('Tiempo');
+legend({'Con observador','Sin observador'},'Location','southeast')
+
+subplot(3,2,[5,6]);
+plot(t,u,'color','r');
+hold on;
+plot(t,u_compar,'color',[0.4660 0.6740 0.1880]);
+grid on;
+title('Acción de control');
+xlabel('Tiempo');
+legend({'Con observador','Sin observador'},'Location','southeast')

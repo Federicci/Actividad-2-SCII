@@ -61,7 +61,6 @@ B_o=C';
 C_o=B';
 
 Q_o=1e6*diag([1 1 1]);    R_o=0.001;
-%Q_o=20*diag([1 1/10000 1/40]);    R_o=0.1/20;
 
 H_o=[A_o -B_o*inv(R_o)*B_o'; -Q_o -A_o'];
 
@@ -102,11 +101,18 @@ x(1,1)=Ci(1);
 x(2,1)=Ci(2);
 x(3,1)=Ci(3);
 x(4,1)=Ci(4);
+x_compar=zeros(4,pasos);
+x_compar(1,1)=Ci(1);
+x_compar(2,1)=Ci(2);
+x_compar(3,1)=Ci(3);
+x_compar(4,1)=Ci(4);
 u(1)=0;
+u_compar(1)=0;
 
 for i=2:1:pasos
     x_actual=x(:,i-1);
     x_hat_actual=x_hat(:,i-1);
+    
     integracion=x(4,i-1)+deltat*(ref(1,i-1)-CC*x_actual);
     u_actual=-KK(1:3)*x_hat_actual(1:3)-integracion*KK(4);
     u=[u u_actual];
@@ -129,18 +135,52 @@ for i=2:1:pasos
     x_hat_p=e*K_o'+A*x_hat_actual+B*u_actual;
     
     x_hat_sig=x_hat_actual+deltat*x_hat_p;
-    x_hat(1,i)=x_hat_sig(1);
-    x_hat(2,i)=x_hat_sig(2);
-    x_hat(3,i)=x_hat_sig(3);
+    x_hat(:,i)=x_hat_sig;
     
+    %sistema para comparar, sin observador
+    x_actual_compar=x_compar(:,i-1);
+    integracion_compar=x_compar(4,i-1)+deltat*(ref(1,i-1)-CC*x_actual_compar);
+    u_actual_compar=-KK(1:3)*x_actual_compar(1:3)-integracion_compar*KK(4);
+    u_compar=[u_compar u_actual_compar];
+    
+    x1_p_compar=-Ra*x_actual_compar(1)/Laa-Km*x_actual_compar(2)/Laa+u_actual_compar/Laa;
+    x2_p_compar=Ki*x_actual_compar(1)/J-Bm*x_actual_compar(2)/J-fTl(i-1)/J;
+    x3_p_compar=x_actual_compar(2);
+    x_p_actual_compar=[x1_p_compar; x2_p_compar; x3_p_compar];
+    
+    x_sig_compar=x_actual_compar(1:3)+deltat*x_p_actual_compar;
+    x_compar(1,i)=x_sig_compar(1);
+    x_compar(2,i)=x_sig_compar(2);
+    x_compar(3,i)=x_sig_compar(3);
+    x_compar(4,i)=integracion_compar;
 end
 
-figure
-plot(t,x(3,:));
+figure(1)
+subplot(2,2,1);
+plot(t,x(3,:),'color','r');
 hold on;
-plot(t,ref);
-figure
-plot(t,u);
+plot(t,x_compar(3,:),'color',[0.4660 0.6740 0.1880]);
+plot(t,ref,'k');
+grid on;
+title('Ángulo');
+xlabel('Tiempo');
+legend({'Con observador','Sin observador','Referencia'},'Location','southeast')
+subplot(2,2,2);
+plot(t,x(1,:),'color','r');
+hold on;
+plot(t,x_compar(1,:),'color',[0.4660 0.6740 0.1880]);
+grid on;
+title('Corriente');
+xlabel('Tiempo');
+legend({'Con observador','Sin observador'},'Location','southeast')
+subplot(2,2,[3,4]);
+plot(t,u,'color','r');
+hold on;
+plot(t,u_compar,'color',[0.4660 0.6740 0.1880]);
+grid on;
+title('Acción de control');
+xlabel('Tiempo');
+legend({'Con observador','Sin observador'},'Location','southeast')
 
 
 

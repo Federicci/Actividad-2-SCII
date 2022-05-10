@@ -56,20 +56,11 @@ u(1)=0;
 for i=2:1:pasos
     x_actual=[x(1,i-1); x(2,i-1); x(3,i-1); x(4,i-1)];
     u_actual=-K*x_actual+ref*G;
-    %u_actual=-K*x_actual+(ref-C*x_actual);
     u=[u u_actual];
     
-    x1_p=-a*x_actual(1)+a*x_actual(2);
-    x2_p=x_actual(3);
-    x3_p=w^2*x_actual(1)-w^2*x_actual(2)+b*w^2*u_actual;
-    x4_p=c*x_actual(1);
-    x_p_actual=[x1_p; x2_p; x3_p; x4_p];
-    
+    x_p_actual=A*x_actual+B*u_actual;
     x_sig=x_actual+deltat*x_p_actual;
-    x(1,i)=x_sig(1);
-    x(2,i)=x_sig(2);
-    x(3,i)=x_sig(3);
-    x(4,i)=x_sig(4);
+    x(:,i)=x_sig;
 end
 
 figure
