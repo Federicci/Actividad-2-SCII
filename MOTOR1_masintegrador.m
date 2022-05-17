@@ -93,12 +93,27 @@ for i=2:1:pasos
 end
 
 figure
-plot(t,x(3,:)); 
+subplot(2,2,1)
 hold on;
-plot(t,ref);
-figure
-plot(t,ua); %Acc. de control.
-figure
-plot(t,x(1,:)); %Corriente
+grid on;
+plot(t,ua,'r');
+title('Acción de control');
+xlabel('Tiempo');
+ylabel('Voltaje');
+subplot(2,2,2)
+hold on;
+grid on;
+plot(t,x(1,:),'r');
+title('Corriente');
+xlabel('Tiempo');
+subplot(2,2,[3,4])
+hold on;
+grid on;
+plot(t,x(3,:),'r'); 
+plot(t,ref,'k');
+legend({'Salida','Referencia'},'Location','southeast');
+title('Salida del sistema');
+xlabel('Tiempo');
+ylabel('Ángulo');
 
 

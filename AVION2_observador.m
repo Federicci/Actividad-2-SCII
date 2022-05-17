@@ -74,7 +74,7 @@ u_compar(1)=0;
 for i=2:1:pasos
     x_actual=x(:,i-1);
     x_hat_actual=x_hat(:,i-1);
-    u_actual=-K*x_hat_actual+ref*G;
+    u_actual=-K(2:3)*x_hat_actual(2:3)-K(4)*x_actual(4)+ref*G;
     u=[u u_actual];
     
     x_p_actual=A*x_actual+B*u_actual;

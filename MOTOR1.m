@@ -61,11 +61,7 @@ Ci=[0 0 0];
 t=0:deltat:(ts-deltat);
 %Funciones de referencia y torque mientras va variando el tiempo:
 ref=(pi/2)*square(2*pi*t/0.6);
-figure
-plot(t,ref);
 fTl=(Tl/2)*square(2*pi*t/0.6)+Tl/2;
-figure
-plot(t,fTl);
 
 x=zeros(3,pasos);
 x(1,1)=Ci(1);
@@ -91,13 +87,27 @@ for i=2:1:pasos
 end
 
 figure
-plot(t,x(3,:));
+subplot(1,2,1)
 hold on;
-plot(t,ref);
+grid on;
+plot(t,ref,'k');
+title('Referencia');
+xlabel('Tiempo');
+ylabel('Ángulo');
+subplot(1,2,2)
+hold on;
+grid on;
+plot(t,fTl,'k');
+title('Torque de perturbación');
+xlabel('Tiempo');
+ylabel('Torque');
+
 figure
-plot(t,u);
-
-
-
-
-
+grid on;
+hold on;
+plot(t,x(3,:),'r');
+plot(t,ref,'k');
+legend({'Salida','Referencia'},'Location','southeast');
+title('Salida del sistema');
+xlabel('Tiempo');
+ylabel('Ángulo');

@@ -2,7 +2,7 @@ clc, clear all, close all;
 
 m=.1;
 Fricc=0.1; 
-l=12;
+l=0.6;
 g=9.8;
 M=.5;
 
@@ -141,6 +141,8 @@ x_compar(4,1)=Ci(4);
 x_compar(5,1)=Ci(5);
 ua(1)=0;
 ua_compar(1)=0;
+phi_dd=0;
+phi_dd_com=0;
 
 x_OP=[0;0;pi;0;0];
 
@@ -154,12 +156,14 @@ for i=2:1:pasos
     u_actual=-K(1)*x_actual(1)-K(2:4)*x_hat_actual(2:4)-integracion*K(5); %El - va por -Ki
     ua=[ua u_actual];
     
-    x_1_p=x_actual(2);
-    x_2_p=-Fricc*x_actual(2)/M-m(i-1)*g*(x_actual(3)-x_OP(3))/M+u_actual/M;
-    x_3_p=x_actual(4);
-    x_4_p=-Fricc*x_actual(2)/(l*M)-g*(m(i-1)+M)*(x_actual(3)-x_OP(3))/(l*M)+u_actual/(l*M);
+    delta_dd=(u_actual-Fricc*x_actual(2)-m*l*phi_dd*cos(x_actual(3))+m*l*sin(x_actual(3))*x_actual(4)^2)/(M+m);
+    phi_dd=(g*sin(x_actual(3))-delta_dd*cos(x_actual(3)))/l;
+    x_p_1=x_actual(2);
+    x_p_2=delta_dd;
+    x_p_3=x_actual(4);
+    x_p_4=phi_dd;
     x_5_p=0;
-    x_p_actual=[x_1_p;x_2_p;x_3_p;x_4_p;x_5_p];
+    x_p_actual=[x_p_1;x_p_2;x_p_3;x_p_4;x_5_p];
     
     x_sig=x_actual+deltat*x_p_actual;
     x(:,i)=x_sig;
@@ -180,12 +184,14 @@ for i=2:1:pasos
     u_actual_compar=-K(1:4)*x_actual_compar(1:4)-integracion_compar*K(5);
     ua_compar=[ua_compar u_actual_compar];
     
-    x_1_p_com=x_actual_compar(2);
-    x_2_p_com=-Fricc*x_actual_compar(2)/M-m(i-1)*g*(x_actual_compar(3)-x_OP(3))/M+u_actual_compar/M;
-    x_3_p_com=x_actual_compar(4);
-    x_4_p_com=-Fricc*x_actual_compar(2)/(l*M)-g*(m(i-1)+M)*(x_actual_compar(3)-x_OP(3))/(l*M)+u_actual_compar/(l*M);
-    x_5_p_com=0;
-    x_p_actual_compar=[x_1_p_com;x_2_p_com;x_3_p_com;x_4_p_com;x_5_p_com];
+    delta_dd_com=(u_actual_compar-Fricc*x_actual_compar(2)-m*l*phi_dd_com*cos(x_actual_compar(3))+m*l*sin(x_actual_compar(3))*x_actual_compar(4)^2)/(M+m);
+    phi_dd_com=(g*sin(x_actual_compar(3))-delta_dd_com*cos(x_actual_compar(3)))/l;
+    x_p_1_com=x_actual_compar(2);
+    x_p_2_com=delta_dd_com;
+    x_p_3_com=x_actual_compar(4);
+    x_p_4_com=phi_dd_com;
+    x_p_5_com=0;
+    x_p_actual_compar=[x_p_1_com;x_p_2_com;x_p_3_com;x_p_4_com;x_p_5_com];
     
     x_sig_compar=x_actual_compar+deltat*x_p_actual_compar;
     x_compar(:,i)=x_sig_compar;

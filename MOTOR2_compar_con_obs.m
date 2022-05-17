@@ -115,6 +115,8 @@ for i=2:1:pasos
     
     integracion=x(4,i-1)+deltat*(ref(1,i-1)-CC*x_actual);
     u_actual=-KK(1:3)*x_hat_actual(1:3)-integracion*KK(4);
+    u_actual=-KK(1)*x_hat_actual(1)-KK(2:3)*x_actual(2:3)-integracion*KK(4);
+    %Activar para ver respuesta con solo corriente observada
     u=[u u_actual];
     
     x1_p=-Ra*x_actual(1)/Laa-Km*x_actual(2)/Laa+u_actual/Laa;

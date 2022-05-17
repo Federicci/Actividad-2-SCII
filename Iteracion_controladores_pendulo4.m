@@ -1,8 +1,10 @@
-clc, clear all, close all;
-
+min_ang=10;
+min_dist=20;
+for p=1:1:200
+    
 m=.1;
 Fricc=0.1; 
-l=12;
+l=0.6;
 g=9.8;
 M=.5;
 
@@ -18,9 +20,8 @@ CC=[C 0];
 
 %Diseño con LQR
 %Q=1*diag([0.0001 0.001 10000 10 100]);    R=1000;
-Q=1*diag([0.1 1 10 10 1]);    R=100;
-Q=1*diag([0.0000    0.0010    0.0061    0.0086    0.0003]);    R=100; %por iteracion
-
+%Q=1*diag([0.1 1 10 10 1]);    R=100;
+Q=rand(1)*0.01*diag([0.1*rand(1) 1*rand(1) 10*rand(1) 10*rand(1) 1*rand(1)]);    R=100; Qa=Q;
 %Hamiltoniano
 H=[AA -BB*inv(R)*BB'; -Q -AA'];
 [vects1,autovals1]=eig(H);  %columnas de vects: autovectores
@@ -51,8 +52,7 @@ AA=[A zeros(4,1); -C 0];
 %Diseño con LQR
 %Q=1*diag([0.0001 0.001 10000 10 100]);    R=1000;
 Q=1*diag([0.1 1 10 10 1]);    R=100;
-Q=1*diag([0.0008    0.0536    0.3441    0.7716    0.0045]);    R=100; %por iteracion
-
+Q=rand(1)*1*diag([0.1*rand(1) 1*rand(1) 10*rand(1) 10*rand(1) 1*rand(1)]);    R=100; Qb=Q;
 %Hamiltoniano
 H=[AA -BB*inv(R)*BB'; -Q -AA'];
 [vects1,autovals1]=eig(H);  %columnas de vects: autovectores
@@ -82,8 +82,7 @@ A=[0 1 0 0;0 -Fricc/M -m*g/M 0; 0 0 0 1; 0 -Fricc/(l*M) -g*(m+M)/(l*M) 0];
 
 %Diseño con LQR para el observador
 Q_o=1e4*diag([1 1 10 1]);    R_o=0.1;
-Q_o=1e4*diag([0.2128    0.0039    5.7805    0.1200]);    R_o=0.1; %iteracion
-
+Q_o=rand(1)*1e4*diag([1*rand(1) 1*rand(1) 10*rand(1) 1*rand(1)]);    R_o=0.1;  Qc=Q_o;
 A_o=A';
 B_o=C';
 C_o=B';
@@ -111,7 +110,7 @@ K_o=inv(R_o)*B_o'*P_o;
 
 %Simulación del control:
 deltat=10^-3;
-ts=200;
+ts=100;
 pasos=round(ts/deltat);
 Ci=[0 0 pi 0 0];
 t=0:deltat:(ts-deltat);
@@ -139,8 +138,6 @@ x_compar(2,1)=Ci(2);
 x_compar(3,1)=Ci(3);
 x_compar(4,1)=Ci(4);
 x_compar(5,1)=Ci(5);
-ua(1)=0;
-ua_compar(1)=0;
 
 x_OP=[0;0;pi;0;0];
 
@@ -152,8 +149,7 @@ for i=2:1:pasos
     x_hat_actual=x_hat(:,i-1);
     integracion=x_actual(5)+deltat*(ref_dist(i-1)-CC*x_actual);
     u_actual=-K(1)*x_actual(1)-K(2:4)*x_hat_actual(2:4)-integracion*K(5); %El - va por -Ki
-    ua=[ua u_actual];
-    
+        
     x_1_p=x_actual(2);
     x_2_p=-Fricc*x_actual(2)/M-m(i-1)*g*(x_actual(3)-x_OP(3))/M+u_actual/M;
     x_3_p=x_actual(4);
@@ -178,7 +174,6 @@ for i=2:1:pasos
     x_actual_compar=x_compar(:,i-1);
     integracion_compar=x_actual_compar(5)+deltat*(ref_dist(i-1)-CC*x_actual_compar);
     u_actual_compar=-K(1:4)*x_actual_compar(1:4)-integracion_compar*K(5);
-    ua_compar=[ua_compar u_actual_compar];
     
     x_1_p_com=x_actual_compar(2);
     x_2_p_com=-Fricc*x_actual_compar(2)/M-m(i-1)*g*(x_actual_compar(3)-x_OP(3))/M+u_actual_compar/M;
@@ -192,72 +187,17 @@ for i=2:1:pasos
     x_compar(5,i)=integracion_compar;
 end
 
-figure(1)
-subplot(2,2,1);
-plot(t,x(1,:),'color','r');
-hold on;
-plot(t,x_compar(1,:),'color',[0.4660 0.6740 0.1880]);
-plot(t,ref_dist,'k');
-grid on;
-title('Distancia');
-xlabel('Tiempo');
-legend({'Con observador','Sin observador','Referencia'},'Location','northeast')
-subplot(2,2,2);
-plot(t,x(3,:),'color','r');
-hold on;
-plot(t,x_compar(3,:),'color',[0.4660 0.6740 0.1880]);
-grid on;
-title('Ángulo');
-xlabel('Tiempo');
-legend({'Con observador','Sin observador'},'Location','southeast')
-subplot(2,2,[3,4]);
-plot(t,ua,'color','r');
-hold on;
-plot(t,ua_compar,'color',[0.4660 0.6740 0.1880]);
-grid on;
-title('Acción de control');
-xlabel('Tiempo');
-legend({'Con observador','Sin observador'},'Location','southeast')
+ang_max=max(x(3,:));
+dist_max=max(x(1,:));
+if ang_max<min_ang && dist_max<min_dist
+    Qopt1=[Qa(1,1) Qa(2,2), Qa(3,3), Qa(4,4), Qa(5,5)];
+    Qopt2=[Qb(1,1) Qb(2,2), Qb(3,3), Qb(4,4), Qb(5,5)];
+    Qopto=[Qc(1,1) Qc(2,2), Qc(3,3), Qc(4,4)];
+    min_ang=ang_max
+    min_dist=dist_max
+end
+end
 
-%Planos de fase
-figure(2)
-subplot(2,1,1);
-grid on;
-hold on;
-plot(x(1,1),x(2,1),'b');
-plot(x_compar(1,1),x_compar(2,1),'r');
-%f=-t/ts+1;
-%f=(t-ts).^2/(ts^2);
-f=-t.^1.2/(ts^1.2)+1;
-f(end)=1;
-C=zeros(pasos,3);
-C(:,3)=f;
-scatter(x(1,:),x(2,:),3,C,'filled')
-C1=zeros(pasos,3);
-C1(:,1)=f;
-scatter(x_compar(1,:),x_compar(2,:),3,C1,'filled')
-title('Distancia vs velocidad');
-xlabel('Distancia');
-ylabel('Velocidad');
-legend({'Con observador','Sin observador'},'Location','southeast')
-
-subplot(2,1,2);
-grid on;
-hold on;
-plot(x(3,1),x(4,1),'b');
-plot(x_compar(3,1),x_compar(4,1),'r');
-%f=-t/ts+1;
-%f=(t-ts).^2/(ts^2);
-f=-t.^1.2/(ts^1.2)+1;
-f(end)=1;
-C=zeros(pasos,3);
-C(:,3)=f;
-scatter(x(3,:),x(4,:),3,C,'filled')
-C1=zeros(pasos,3);
-C1(:,1)=f;
-scatter(x_compar(3,:),x_compar(4,:),3,C1,'filled')
-title('Ángulo vs velocidad angular');
-xlabel('Ángulo');
-ylabel('Velocidad angular');
-legend({'Con observador','Sin observador'},'Location','southeast')
-
+Qopt1
+Qopt2
+Qopto

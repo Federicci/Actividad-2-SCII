@@ -63,7 +63,60 @@ for i=2:1:pasos
     x(:,i)=x_sig;
 end
 
+ref=ref*ones(1,pasos);
 figure
-plot(t,x(4,:));
-figure
-plot(t,u);
+
+subplot(2,2,1);
+grid on;
+hold on;
+plot(t,x(4,:),'r');
+plot(t,ref,'k');
+title('Altura');
+xlabel('Tiempo');
+legend({'Altura','Referencia'},'Location','southeast')
+
+subplot(2,2,2);
+grid on;
+hold on;
+plot(t,u,'r');
+title('Acción de control');
+xlabel('Tiempo');
+
+%Cambio de referencia y Ci
+Ci=[0 0 0 -500];
+t=0:deltat:(ts-deltat);
+ref=100;
+x=zeros(4,pasos);
+x(1,1)=Ci(1);
+x(2,1)=Ci(2);
+x(3,1)=Ci(3);
+x(4,1)=Ci(4);
+u=0;
+u(1)=0;
+
+for i=2:1:pasos
+    x_actual=[x(1,i-1); x(2,i-1); x(3,i-1); x(4,i-1)];
+    u_actual=-K*x_actual+ref*G;
+    u=[u u_actual];
+    
+    x_p_actual=A*x_actual+B*u_actual;
+    x_sig=x_actual+deltat*x_p_actual;
+    x(:,i)=x_sig;
+end
+
+ref=ref*ones(1,pasos);
+subplot(2,2,3);
+grid on;
+hold on;
+plot(t,x(4,:),'r');
+plot(t,ref,'k');
+title('Altura');
+xlabel('Tiempo');
+legend({'Altura','Referencia'},'Location','southeast')
+
+subplot(2,2,4);
+grid on;
+hold on;
+plot(t,u,'r');
+title('Acción de control');
+xlabel('Tiempo');
