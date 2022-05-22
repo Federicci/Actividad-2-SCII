@@ -30,11 +30,10 @@ a1=-p1-p2-p3-p4;
 a2=p1*p2+p1*p3+p1*p4+p2*p3+p2*p4+p3*p4;
 a3=-p1*p2*p3-p1*p2*p4-p1*p3*p4-p2*p3*p4;
 a4=p1*p2*p3*p4;
-phi_A=a0*A^4+a1*A^3+a2*A^2+a1*A^1+a0*A^0;
+phi_A=a0*A^4+a1*A^3+a2*A^2+a3*A^1+a4*A^0;
 
 AUX=[B A*B A*A*B A*A*A*B];
 K=[0 0 0 1]*inv(AUX)*phi_A;
-K=place(A,B,[p1;p2;p3;p4]);
 
 %G para referencia distinta de 0:
 G=-inv(C*inv(A-B*K)*B);

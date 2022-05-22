@@ -30,11 +30,10 @@ a1=-p1-p2-p3-p4;
 a2=p1*p2+p1*p3+p1*p4+p2*p3+p2*p4+p3*p4;
 a3=-p1*p2*p3-p1*p2*p4-p1*p3*p4-p2*p3*p4;
 a4=p1*p2*p3*p4;
-phi_A=a0*A^4+a1*A^3+a2*A^2+a1*A^1+a0*A^0;
+phi_A=a0*A^4+a1*A^3+a2*A^2+a3*A^1+a4*A^0;
 
 AUX=[B A*B A*A*B A*A*A*B];
 K=[0 0 0 1]*inv(AUX)*phi_A;
-K=place(A,B,[p1;p2;p3;p4]);
 
 %G para referencia distinta de 0:
 G=-inv(C*inv(A-B*K)*B);
@@ -44,7 +43,7 @@ A_o=A';
 B_o=C';
 C_o=B';
 
-K_o=place(A_o,B_o,1*[-5 -3 -1-i -1+i]);
+K_o=place(A_o,B_o,1*[-50 -30 -1-i -1+i]);
 
 %Simulacion
 deltat=10^-3;
@@ -74,7 +73,7 @@ u_compar(1)=0;
 for i=2:1:pasos
     x_actual=x(:,i-1);
     x_hat_actual=x_hat(:,i-1);
-    u_actual=-K(2:3)*x_hat_actual(2:3)-K(4)*x_actual(4)+ref*G;
+    u_actual=-K(1:3)*x_hat_actual(1:3)-K(4)*x_actual(4)+ref*G;
     u=[u u_actual];
     
     x_p_actual=A*x_actual+B*u_actual;
