@@ -2,7 +2,7 @@ clc, clear all, close all;
 
 m=.1;
 Fricc=0.1; 
-l=12;
+l=0.6;
 g=9.8;
 M=.5;
 
@@ -151,7 +151,7 @@ for i=2:1:pasos
     x_actual=x(:,i-1);
     x_hat_actual=x_hat(:,i-1);
     integracion=x_actual(5)+deltat*(ref_dist(i-1)-CC*x_actual);
-    u_actual=-K(1)*x_actual(1)-K(2:4)*x_hat_actual(2:4)-integracion*K(5); %El - va por -Ki
+    u_actual=-K(1)*x_actual(1)-K(2:4)*(x_hat_actual(2:4)-x_OP(2:4))-integracion*K(5); %El - va por -Ki
     ua=[ua u_actual];
     
     x_1_p=x_actual(2);
@@ -177,7 +177,7 @@ for i=2:1:pasos
     %Sistema sin observador para comparar
     x_actual_compar=x_compar(:,i-1);
     integracion_compar=x_actual_compar(5)+deltat*(ref_dist(i-1)-CC*x_actual_compar);
-    u_actual_compar=-K(1:4)*x_actual_compar(1:4)-integracion_compar*K(5);
+    u_actual_compar=-K(1:4)*(x_actual_compar(1:4)-x_OP(1:4))-integracion_compar*K(5);
     ua_compar=[ua_compar u_actual_compar];
     
     x_1_p_com=x_actual_compar(2);
